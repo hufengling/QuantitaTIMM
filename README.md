@@ -25,7 +25,7 @@ I'd highly recommend learning to work with data using [Tidyverse](https://www.an
 
 You should definitely be coding in RStudio (an app that helps you code in R, the language) and using RMarkdown (a way to keep track of your code so it is reproducible.) RMarkdown also allows you to write non-code (normal things) and LaTeX (to type math) in the same document as code, so you can write reminders of what your code is doing to your future self or create [PDF reports](https://miro.medium.com/max/2920/1*6Y0XxQynWWUNTPUOAOhl6g.png).
 
-There are a number of [cheatsheets](https://rstudio.com/resources/cheatsheets/) available so you don't have to memorize all the functions, formatting, and syntax. The cheatsheets on [RMarkdown](https://github.com/rstudio/cheatsheets/raw/master/rmarkdown-2.0.pdf), [RStudio IDE] (https://github.com/rstudio/cheatsheets/raw/master/rstudio-ide.pdf), [visualization with ggplot2](https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf), and [data transformation with dplyr](https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf) might be particularly helpful.
+There are a number of [cheatsheets](https://rstudio.com/resources/cheatsheets/) available so you don't have to memorize all the functions, formatting, and syntax. The cheatsheets on [RMarkdown](https://github.com/rstudio/cheatsheets/raw/master/rmarkdown-2.0.pdf), [RStudio IDE](https://github.com/rstudio/cheatsheets/raw/master/rstudio-ide.pdf), [visualization with ggplot2](https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf), and [data transformation with dplyr](https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf) might be particularly helpful.
 
 
 #### Python
