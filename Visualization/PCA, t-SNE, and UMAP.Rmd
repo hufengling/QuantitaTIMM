@@ -1,0 +1,459 @@
+---
+title: "PCA, t-SNE, and UMAP"
+subtitle: "while revisiting some RMarkdown ideas"
+author: "Fengling Hu"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      countdown: 60000
+---
+background-image: url(https://upload.wikimedia.org/wikipedia/commons/b/be/Sharingan_triple.svg)
+
+class: center, bottom
+
+# xaringan
+
+### /ʃaː.'riŋ.ɡan/
+
+---
+```{r setup, message = F, warning = F}
+options(htmltools.dir.version = FALSE)
+
+#loads ggplot2, dplyr, tidyr, and more
+library(tidyverse)
+#theme for ggplot2
+library(hrbrthemes)
+#code for tsne
+library(tsne)
+#code for umap
+library(umap)
+#code for PCA
+library(FactoMineR)
+#sets figure size and echo = F default
+knitr::opts_chunk$set(fig.width=4,
+                      fig.height=4,
+                      echo = F) 
+```
+
+---
+class: inverse, center, middle
+
+# PCA
+
+---
+# What is PCA?
+
+* Stands for Principle Components Analysis
+
+* Method based in linear algebra (works with matrices)
+
+* A way of "squinting" at data such that the data "looks" a certain way
+
+    * The first direction (axis) you "squint" along contains the most information
+
+    * Given the first axis, the second axis you "squint" along contains the next-most information AND is perpendicular to the first axis
+
+    * And so on, until you've "looked" along all axes
+
+* Each of these new axes you have found are called "principle components" (PCs)
+
+* Essentially, PCA is a rotation of some high-dimensional space, such that the rotation has certain special properties
+
+---
+class: inverse, center, middle
+
+# Primer in Linear Algebra
+
+---
+
+* The normal Cartesian plane has the x axis and y axis
+
+```{r, echo = T}
+df <- data.frame(x = 5, y = 4)
+ggplot(df) + geom_point(aes(x, y)) + 
+  geom_vline(xintercept = 0, linetype = "dotted") + 
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  xlim(-10, 10) + ylim(-10, 10) + 
+  theme_ipsum_rc()
+```
+
+.footnote[
+[1] All figures were generated with ggplot2. I'll hide the ggplot2 code for future figures.
+[2] I did SO much Googling to remember how to do things in ggplot2. It's part of the process.
+[3] I've never made a presentation in RMarkdown before, so I knitted almost every time I made a change. [4] I crashed my computer three times.
+]
+---
+```{r}
+df <- data.frame(x = 5, y = 4)
+ggplot(df) + geom_point(aes(x, y)) + 
+  geom_vline(xintercept = 0, linetype = "dotted") + 
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  xlim(-10, 10) + ylim(-10, 10) + 
+  theme_ipsum_rc()
+```
+
+* We can define any point by how much we have to "walk" in the x and y directions, from the point (0, 0) to get there
+
+    * This point is named (5, 4) and can't be named anything else
+
+    * (5, 4) refers to this point and isn't the name of anything else
+
+* But there's no reason we have to "walk" along the x and y axes
+
+    * For example, we can also define points by how much we walk along the lines $y = x$ and $y = -x$
+
+---
+* So what does this look like?
+
+```{r}
+df <- data.frame(x = 5, y = 4)
+ggplot(df) + geom_point(aes(x, y)) + 
+  geom_abline(intercept = 0, slope = 1, linetype = "dotted") + 
+  geom_abline(intercept = 0, slope = -1, linetype = "dotted") +
+  xlim(-10, 10) + ylim(-10, 10) + 
+  theme_ipsum_rc()
+```
+
+--
+* Now, the same point is called (4.5, -0.5)
+
+* We "walk" 4.5 units along $y = x$ and -0.5 units along $y = -x$
+
+* Nothing is actually changing, we are just changing our perspective
+
+--
+* BUT look at how close the point is to one of our new axes!
+
+    * If we just called it (4.5), we would be mostly correct! (Off by 0.5)
+
+    * Compare to the "default" perspective. If we called the point (5), we would be off by 4
+
+---
+
+* Of note, our "new" perspective still has perpendicular (also called "orthogonal") axes
+
+    * There's no reason why this has to be the case
+
+    * But they behave nicely and PCA always finds perpendicular axes
+--
+* Also note our "default" perspective had two axes and so does our new one
+
+    * This has to be the case
+
+    * Axes cannot be parallel (or else you couldn't move "up" or "down")
+---
+
+# Back to PCA
+
+* Essentially, PCA asks, "Is there some special perspective we can take so some axes 'carry' more information?"
+
+```{r}
+mtcars <- mtcars %>% select(mpg, wt)
+ggplot(mtcars) + geom_point(aes(mpg, wt)) + theme_ipsum_rc()
+```
+
+--
+```{r}
+ggplot(mtcars) + geom_point(aes(mpg, wt)) + geom_abline(intercept = 6.7, slope = -.18, linetype = "dotted") + theme_ipsum_rc()
+```
+
+* If we squint along this line, we can refer to every point by only one number and be **mostly** correct!
+
+.footnote[
+I visually guess-timated this line...
+]
+
+---
+
+# Example
+* Of course, we are still losing information, unless we use as many axes as we originally had
+
+* BUT while each axis in "default" perspective carries, on average, 1/d (1/2 in two dimensions) of the information, we can rotate our axes to "concentrate" information along certain axes
+
+* PCA is guaranteed to find the best axes to concentrate information (also called "explain variance").
+
+--
+
+```{r, echo = T}
+pc <- PCA(mtcars, graph = F) # in the FactoMineR package
+pc$eig
+```
+
+* In our plot, the axis I drew (assuming I guess-timated correctly) accounts for 93.38% of the information ("variance") in the data
+
+* If we needed to use fewer dimensions, we could just use that one and only lose 6.617% of the information in the data!
+
+---
+
+# High-Dimensional Example
+* This process generalizes to higher dimensions easily (though it's impossible to think about intuitively)
+
+* We can look at the MNIST dataset, which contains a lot of images of digits
+
+```{r}
+
+# helper function for visualization
+show_digit = function(arr784, col = gray(12:1 / 12), ...) {
+  image(matrix(as.matrix(arr784[-785]), nrow = 28)[, 28:1], col = col, ...)
+}
+
+# load image files
+load_image_file = function(filename) {
+  ret = list()
+  f = file(filename, 'rb')
+  readBin(f, 'integer', n = 1, size = 4, endian = 'big')
+  n    = readBin(f, 'integer', n = 1, size = 4, endian = 'big')
+  nrow = readBin(f, 'integer', n = 1, size = 4, endian = 'big')
+  ncol = readBin(f, 'integer', n = 1, size = 4, endian = 'big')
+  x = readBin(f, 'integer', n = n * nrow * ncol, size = 1, signed = FALSE)
+  close(f)
+  data.frame(matrix(x, ncol = nrow * ncol, byrow = TRUE))
+}
+
+# load label files
+load_label_file = function(filename) {
+  f = file(filename, 'rb')
+  readBin(f, 'integer', n = 1, size = 4, endian = 'big')
+  n = readBin(f, 'integer', n = 1, size = 4, endian = 'big')
+  y = readBin(f, 'integer', n = n, size = 1, signed = FALSE)
+  close(f)
+  y
+}
+
+# load images
+train = load_image_file("train-images-idx3-ubyte")
+train$y = load_label_file("train-labels-idx1-ubyte")
+
+set.seed(10)
+mnist <- sample_n(train, 1000)
+```
+
+```{r, fig.width = 3, fig.height = 3}
+img <- function(d, row_index){
+  
+  #Obtaining the row as a numeric vector
+  r <- as.numeric(d[row_index, 2:784])
+  
+  #Creating a empty matrix to use
+  im <- matrix(nrow = 28, ncol = 28)
+  
+  #Filling properly the data into the matrix
+  j <- 1
+  for(i in 28:1){
+    
+    im[,i] <- r[j:(j+27)]
+    
+    j <- j+28
+    
+  }  
+  
+  #Plotting the image with the label
+  image(x = 1:28, 
+        y = 1:28, 
+        z = im, 
+        col=gray((0:255)/255), 
+        main = paste("Number:", d[row_index, 1]))
+}
+
+img(mnist, 10)
+```
+
+* We can run PCA on this dataset (784 dimensions!)
+
+```{r}
+mnistPCA <- PCA(mnist[, 1:784], graph = F)
+mnistPCA$eig[1:5, ]
+mnistPC12coords <- mnistPCA$ind$coord[, 1:2] %>% cbind(mnist$y) %>% as.data.frame() #<<
+mnistPC12coords$V3 <- as.factor(mnistPC12coords$V3)
+```
+---
+
+# Take-aways
+* The first two PCs don't do well at separating digits
+
+    * Note the axes are less meaningful - one of the costs of PCA
+
+```{r, fig.width = 3, fig.height = 3}
+ggplot(mnistPC12coords) + geom_point(aes(Dim.1, Dim.2, color = V3)) + theme_ipsum_rc()
+```
+--
+
+* This is entirely expected as the first two PCs only explain `r mnistPCA$eig[2, 3]` of the total variation (I used R code to display this number!)
+    
+    * Also, while PCA has applications in visualization, it is NOT specifically built for it
+    
+    * PCA has uses in dimension reduction, PC-regression, and more
+
+---
+class: inverse, center, middle
+
+# t-SNE
+---
+# What is t-SNE?
+
+* Stands for t-distributed Stochastic Neighbor Embedding
+    
+    * Involves an element of randomness (stochastic). PCA always gives the same, best result. t-SNE can't guarantee "best" but looks for "as good as it can find"
+    
+    * Looks to preserve high-dimensional local neighborhoods, but doesn't care about global relationships
+    
+    * Involves a t-distribution (looks like a normal distribution, but fades out more slowly.)
+    
+* Specifically designed for visualization - it's used for nothing else
+
+---
+# Intuition
+
+* In high-dimensional space, everything is REALLY far away from everything else
+
+    * In 1-D, the (0) and (1) are only 1 unit away from each other
+    
+    * But in 2-D, maybe the points are actually (0, 0) and (1, 10000) - they're now more than 10,000 units apart
+    
+    * As you add dimensions, the problem becomes exponentially worse
+    
+* So t-SNE gives up, pretty much entirely, on preserving global (far away) relationships and focuses on local relationships
+
+    * Gets highly penalized when it places nearby points far away from each other, but not much penalty if it places far points too far or not far enough
+    
+    * Also, has to use a special, probability-based measurement for "distance," since things are all far in "normal" distance (Euclidean)
+    
+---
+# Example
+* We can run t-SNE on our MNIST dataset to plot ("embed") the high-dimensional data in two dimensions (k = 2)
+
+    * You can also embed into three dimensions, but 3-D visualizations (for t-SNE and anything else) are **almost** always a bad idea because our brains interpret them in 2-D
+
+* Perplexity is the main tuning parameter in t-SNE and changes the balance of emphasis in global and local relationships
+
+    * High perplexity emphasizes global relationships
+    
+    * Low perplexity emphasizes local relationships
+    
+* Need to try multiple perplexities to find one that works for your solution (5-50 is suggested)
+---
+
+```{r, echo = T, cache = T, message = F}
+mnistTSNE <- tsne(mnist[, 1:784], k = 2, max_iter = 500, perplexity = 20)
+
+mnistTSNE <- mnistTSNE %>% cbind(mnist$y) %>% as.data.frame() #<<
+mnistTSNE$V3 <- as.factor(mnistTSNE$V3)
+
+
+ggplot(mnistTSNE) + geom_point(aes(V1, V2, color = V3)) + theme_ipsum_rc()
+```
+
+---
+# Take-aways
+* This looks a lot better than PCA!
+
+    * Could probably look even better if I tried more perplexities, or allowed more iterations to try and "improve" the embedding
+    
+    
+* Because global structure is so deemphasized, cluster size does not mean anything
+
+    * Neither do distances between clusters
+    
+    * Axes are entirely arbitrary. PCA axes have some meaning based on what variables make up the axes you are "squinting" down, but t-SNE axes truly mean nothing.
+
+.footnote[
+Check out this site for some great interactive visualizations! https://distill.pub/2016/misread-tsne/
+]
+
+---
+
+class: inverse, center, middle
+
+# UMAP
+
+---
+# What is UMAP?
+
+* Stands for Uniform Manifold Approximation and Projection
+
+* Intuition of UMAP is very similar to t-SNE
+
+    * Prioritizes local structure
+    
+    * Uses some different measurement for distance
+    
+    * Is stochastic (can't solve for "best" but improves as much as it can)
+    
+* Also has tuning parameters (n_neighbors and min_dist) to balance emphasis on local vs global structure
+
+    * High values for both emphasize global structure
+    
+    * Low valuesfor both emphasize local structure
+    
+* BUT claims to be faster than t-SNE AND preserve more global structure
+
+---
+```{r, echo = T, cache = T}
+mnistUMAP <- umap(mnist[, 1:784])
+
+
+mnistUMAP <- mnistUMAP[[1]] %>% cbind(mnist$y) %>% as.data.frame()
+mnistUMAP$V3 <- as.factor(mnistUMAP$V3)
+
+
+ggplot(mnistUMAP) + geom_point(aes(V1, V2, color = V3)) + theme_ipsum_rc()
+```
+
+.footnote[
+This site has amazing visualizations. https://pair-code.github.io/understanding-umap/
+]
+
+---
+
+# Take-aways
+* Like in t-SNE, tuning parameters matter
+
+* Cluster sizes are meaningless
+
+* Cluster distances, while more meaningful than t-SNE, are still very meaningless
+
+* Axes are also meaningless
+
+---
+
+# t-SNE vs UMAP
+
+* As far as I understand, t-SNE is still used often
+
+    * Partly because it was the first major breakthrough in high-dimensional visualization
+    
+    * Party because people are more familiar with it, since it's been around longer
+    
+* But UMAP completely dominates t-SNE in every way
+
+    * Fills the exact same niche as t-SNE 
+    
+    * (Comparing to PCA, PCA is much worse at visualization, but has arguable advantages in terms of interpretability. PCA also has other applications.)
+    
+    * Preserves more global structure and faster!
+    
+---
+
+class: inverse, center, middle
+
+# Questions?
+
+---
+
+```{r, echo = T, fig.height = 3, fig.width = 3}
+ggplot(iris) + geom_boxplot(aes(Species, Sepal.Length))
+ggplot(iris) + geom_boxplot(aes(Species, Sepal.Length), outlier.shape = NA) + 
+  geom_jitter(aes(Species, Sepal.Length))
+```
+
+---
+```{r, echo = T, fig.height = 3, fig.width = 3}
+ggplot(iris) + geom_boxplot(aes(Species, Sepal.Length), outlier.shape = NA) + geom_jitter(aes(Species, Sepal.Length)) + labs(title = "ggplot Demo")
+ggplot(iris) + geom_boxplot(aes(Species, Sepal.Length), outlier.shape = NA) + 
+  geom_jitter(aes(Species, Sepal.Length)) + labs(title = "ggplot Demo") + theme_ipsum_rc()
+```
