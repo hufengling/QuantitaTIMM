@@ -30,13 +30,3 @@ You should definitely be coding in RStudio (an app that helps you code in R, the
 RMarkdown lets you reproduce, organize, and present your work. Here is a [presentation](https://apreshill.github.io/rmd4cdc/) with a lot of information on the philosophy of RMarkdown and all the cool things you can do with it.
 
 There are a number of [cheatsheets](https://rstudio.com/resources/cheatsheets/) available so you don't have to memorize all the functions, formatting, and syntax. The cheatsheets on [RMarkdown](https://github.com/rstudio/cheatsheets/raw/master/rmarkdown-2.0.pdf), [RStudio IDE](https://github.com/rstudio/cheatsheets/raw/master/rstudio-ide.pdf), [visualization with ggplot2](https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf), and [data transformation with dplyr](https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf) might be particularly helpful.
-
-#### Python
-
-## Statistics
-
-## Machine Learning
-
-## Big Data
-
-## 'Omics Specifics
